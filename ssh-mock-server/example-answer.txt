@@ -1,0 +1,23 @@
+Welcome to Ubuntu 20.04.3 LTS (GNU/Linux 5.4.0-86-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+  System information as of Thu 30 Sep 2021 09:19:58 PM EEST
+
+  System load:              0.21
+  Usage of /:               60.5% of 48.10GB
+  Memory usage:             68%
+  Swap usage:               8%
+  Processes:                228
+  Users logged in:          1
+  IPv4 address for docker0: bla
+  IPv4 address for eth0:    bla
+  IPv6 address for eth0:    
+  IPv6 address for eth0:    
+  IPv6 address for eth0:    
+
+0 updates can be applied immediately.
+
+*** System restart required ***
