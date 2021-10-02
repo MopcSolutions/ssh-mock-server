@@ -78,6 +78,7 @@ export class Visitor {
                         for(let val of kexAlgorithms) {
                             console.log(val);
                         }
+                        // TODO: check other lists
                     }
                     this.state = this.state.getNextState();
                     break;

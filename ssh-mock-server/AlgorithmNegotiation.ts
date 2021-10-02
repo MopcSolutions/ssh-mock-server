@@ -149,6 +149,7 @@ export class AlgorithmNegotiation {
         // languages_server_to_client
         let rest : Buffer = data.subarray(offset, data.length - offset);
 
+// TODO: check offset ???
 
         console.log("---REST---");
         // console.log(data.toString('ascii'));
@@ -173,4 +174,5 @@ export class AlgorithmNegotiation {
         }
         return retval;
     }
+    // TODO: implement other getters
 }
