@@ -2,12 +2,20 @@ import net = require("net");
 import util = require("util");
 import crypto = require("crypto");
 import { stringify } from "querystring";
+import { States } from './States';
+import { State } from './State';
+import { SshBufferReader } from './SshBufferReader'
+import { AlgorithmNegotiation } from './AlgorithmNegotiation'
 
 export class Visitor {
     // member variables
     private socket: net.Socket;
+    private state: State;
     constructor(s: net.Socket) {
         this.socket = s;
+
+        // build state machine
+        this.state = this.buildStateMachine();
 
         // bind events
         this.socket.on("close", this.onClose.bind(this));
@@ -22,7 +30,6 @@ export class Visitor {
 
         // send protocol version
         // put in into config
-        this.sendString("SSH-2.0-ssh-mock-server\r\n");
     }
 
     // Emitted once the socket is fully closed. The argument hadError is a boolean which says if the socket was closed due to a transmission error.
@@ -33,27 +40,48 @@ export class Visitor {
     // Emitted when a socket connection is successfully established. See net.createConnection().
     private onConnect(): void {
         console.log("Visitor.onConnect: " + this.socket.remoteAddress);
+        this.state = this.state.getNextState();
     }
 
     // Emitted when data is received. The argument data will be a Buffer or String. Encoding of data is set by socket.setEncoding().
     private onData(data: any): void {
-        if(data instanceof String) {
-            console.log("Visitor.onData: " + data);
-        }
         if(data instanceof Buffer) {
             let b: Buffer = data;
             console.log("Visitor.onData");
-            let value : number = b[0];
-            if(value > 0) {
-                console.log(data.toString('utf8'));
+            let s = this.state.currentState();
+            // if we are still on init -> move next
+            if(s == States.init) {
+                this.state = this.state.getNextState();
+                s = this.state.currentState();
             }
-            else {
-                // TODO: check what it means
-                // TODO: check what is going on here
-                for (const pair of b.entries()) {
-                    // console.log(pair);
-                }
-            }
+            console.log("current state: " + s);
+            switch(s) {
+                case States.read_ssh_version:
+                    let sshString = data.toString('utf8');
+                    if(sshString.startsWith('SSH-2.0')) {
+                        console.log('SSH2.0 ok');
+                        this.state = this.state.getNextState();
+                        this.sendString("SSH-2.0-ssh-mock-server\r\n");
+                    } else {
+                        console.log("wrong ssh version: " + sshString);
+                        this.socket.end();
+                        this.socket.destroy();
+                    }
+                    break;
+                case States.read_keys:
+                    let bufferReader = new SshBufferReader(data);
+                    let algorithmNegotiation = new AlgorithmNegotiation(bufferReader.getPayload())
+                    if(algorithmNegotiation.HasError() == false) {
+                        // check stuff
+                        let kexAlgorithms = algorithmNegotiation.getKexAlgorithmsList();
+                        console.log("Visitor.onData LIST KEX ALGIRITHMS");
+                        for(let val of kexAlgorithms) {
+                            console.log(val);
+                        }
+                    }
+                    this.state = this.state.getNextState();
+                    break;
+            }            
         }
     }
 
@@ -108,5 +136,16 @@ export class Visitor {
         }
 
         this.socket.write(message);
+    }
+
+    private buildStateMachine() : State {
+        let initState = new State(States.init);
+        let readSsh = new State(States.read_ssh_version);
+        let readKeys = new State(States.read_keys);
+
+        initState.setNextState(readSsh);
+        readSsh.setNextState(readKeys);
+
+        return initState;
     }
 }

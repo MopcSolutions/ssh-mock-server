@@ -1,5 +1,4 @@
 import net = require("net");
-import util = require("util");
 import crypto = require('crypto');
 
 import { Visitor } from "./Visitor";
@@ -16,6 +15,7 @@ export class Server {
         // read from config
         let port: number = Server.DefaultPort;
 
+        // subscribe event functions
         let s: net.Server = net.createServer();
         this.server = s.listen(port, null, 64);
         this.server.on("connection", this.onConnection.bind(this));
@@ -25,7 +25,11 @@ export class Server {
     }
 
     private onConnection(s: net.Socket): void {
-        console.log("New visitor: " + s.remoteAddress);
+        let client : any = s.address();
+        console.log("New visitor: ");
+        console.log(client.address);
+        console.log(client.family);
+        console.log(client.port);
         // just create one in memory for now
         new Visitor(s);
     }
