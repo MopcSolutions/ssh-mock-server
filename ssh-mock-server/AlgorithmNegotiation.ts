@@ -26,17 +26,17 @@ export class AlgorithmNegotiation {
     private error: string;
     private key: number;
     private cookie: Buffer;
-    private kex_algorithms: any;
-    private server_host_key_algorithms: any;
-    private encryption_algorithms_client_to_server: any;
-    private encryption_algorithms_server_to_client: any;
-    private mac_algorithms_client_to_server: any;
-    private mac_algorithms_server_to_client: any;
-    private compression_algorithms_client_to_server: any;
-    private compression_algorithms_server_to_client: any;
-    private languages_client_to_server: any;
-    private languages_server_to_client: any;
-    private first_kex_packet_follows: any;
+    private kex_algorithms: Buffer;
+    private server_host_key_algorithms: Buffer;
+    private encryption_algorithms_client_to_server: Buffer;
+    private encryption_algorithms_server_to_client: Buffer;
+    private mac_algorithms_client_to_server: Buffer;
+    private mac_algorithms_server_to_client: Buffer;
+    private compression_algorithms_client_to_server: Buffer;
+    private compression_algorithms_server_to_client: Buffer;
+    private languages_client_to_server: Buffer;
+    private languages_server_to_client: Buffer;
+    private first_kex_packet_follows: boolean;
     // ctor
     constructor(data: Buffer) {
         let offset: number = 0;
@@ -59,93 +59,53 @@ export class AlgorithmNegotiation {
         // kex_algorithms
         let len = data.readUInt32BE(offset);
         offset += 4;
-        console.log(offset);
-        console.log(len);
         this.kex_algorithms = data.subarray(offset, offset + len);
         offset += len;
-        console.log("KEX ALGORITMS");
-        console.log(this.kex_algorithms.toString('utf8'));
         // server_host_key_algorithms
         len = data.readUInt32BE(offset);
         offset += 4;
-        console.log(offset);
-        console.log(len);
         this.server_host_key_algorithms = data.subarray(offset, offset + len);
         offset += len;
-        console.log("SERVER HOST KEY ALGORITMS");
-        console.log(this.server_host_key_algorithms.toString('utf8'));
         // encryption_algorithms_client_to_server
         len = data.readUInt32BE(offset);
         offset += 4;
-        console.log(offset);
-        console.log(len);
         this.encryption_algorithms_client_to_server = data.subarray(offset, offset + len);
         offset += len;
-        console.log("ENCRYPTION ALGORITMS CLIENT TO SERVER");
-        console.log(this.encryption_algorithms_client_to_server.toString('utf8'));
         // encryption_algorithms_server_to_client
         len = data.readUInt32BE(offset);
         offset += 4;
-        console.log(offset);
-        console.log(len);
         this.encryption_algorithms_server_to_client = data.subarray(offset, offset + len);
         offset += len;
-        console.log("ENCRYPTION ALGORITMS SERVER TO CLIENT");
-        console.log(this.encryption_algorithms_server_to_client.toString('utf8'));
         // mac_algorithms_client_to_server
         len = data.readUInt32BE(offset);
         offset += 4;
-        console.log(offset);
-        console.log(len);
         this.mac_algorithms_client_to_server = data.subarray(offset, offset + len);
         offset += len;
-        console.log("MAC ALGORITMS CLIENT TO SERVER");
-        console.log(this.mac_algorithms_client_to_server.toString('utf8'));
         // mac_algorithms_server_to_client
         len = data.readUInt32BE(offset);
         offset += 4;
-        console.log(offset);
-        console.log(len);
         this.mac_algorithms_server_to_client = data.subarray(offset, offset + len);
         offset += len;
-        console.log("MAC ALGORITMS SERVER TO CLIENT");
-        console.log(this.mac_algorithms_server_to_client.toString('utf8'));
         // compression_algorithms_client_to_server
         len = data.readUInt32BE(offset);
         offset += 4;
-        console.log(offset);
-        console.log(len);
         this.compression_algorithms_client_to_server = data.subarray(offset, offset + len);
         offset += len;
-        console.log("COMPRESSION ALGORITMS CLIENT TO SERVER");
-        console.log(this.compression_algorithms_client_to_server.toString('utf8'));
         // compression_algorithms_server_to_client
         len = data.readUInt32BE(offset);
         offset += 4;
-        console.log(offset);
-        console.log(len);
         this.compression_algorithms_server_to_client = data.subarray(offset, offset + len);
         offset += len;
-        console.log("COMPRESSION ALGORITMS SERVER TO CLIENT");
-        console.log(this.compression_algorithms_server_to_client.toString('utf8'));
         // languages_client_to_server
         len = data.readUInt32BE(offset);
         offset += 4;
-        console.log(offset);
-        console.log(len);
         this.languages_client_to_server = data.subarray(offset, offset + len);
         offset += len;
-        console.log("LANGUAGES CLIENT TO SERVER");
-        console.log(this.languages_client_to_server.toString('utf8'));
         // languages_server_to_client
         len = data.readUInt32BE(offset);
         offset += 4;
-        console.log(offset);
-        console.log(len);
         this.languages_server_to_client = data.subarray(offset, offset + len);
         offset += len;
-        console.log("LANGUAGES SERVER TO CLIENT");
-        console.log(this.languages_server_to_client.toString('utf8'));
         // languages_server_to_client
         let rest : Buffer = data.subarray(offset, data.length - offset);
 
@@ -166,13 +126,79 @@ export class AlgorithmNegotiation {
     public Error() : string {
         return this.error;
     }
-    public getKexAlgorithmsList() : Array<string> {
+    public GetKexAlgorithmsList() : Array<string> {
+        return this.ConvertListToArray(this.kex_algorithms);
+    }
+    public GetServerHostKeyAlgorithms() : Array<string> {
+        return this.ConvertListToArray(this.server_host_key_algorithms);
+    }
+    public GetEncryptionAlgorithmsClientToServer() : Array<string> {
+        return this.ConvertListToArray(this.encryption_algorithms_client_to_server);
+    }
+    public GetEncryptionAlgorithmsServerToClient() : Array<string> {
+        return this.ConvertListToArray(this.encryption_algorithms_server_to_client);
+    }
+    public GetMacAlgorithmsClientToServer() : Array<string> {
+        return this.ConvertListToArray(this.mac_algorithms_client_to_server);
+    }
+    public GetMacAlgorithmsServerToClient() : Array<string> {
+        return this.ConvertListToArray(this.mac_algorithms_server_to_client);
+    }
+    public GetCompressionAlgorithmsClientToServer() : Array<string> {
+        return this.ConvertListToArray(this.compression_algorithms_client_to_server);
+    }
+    public GetCompressionAlgorithmsServerToClient() : Array<string> {
+        return this.ConvertListToArray(this.compression_algorithms_server_to_client);
+    }
+    public GetLanguagesClientToServer() : Array<string> {
+        return this.ConvertListToArray(this.languages_client_to_server);
+    }
+    public GetLanguagesServerToClient() : Array<string> {
+        return this.ConvertListToArray(this.languages_server_to_client);
+    }
+    // TODO: is this name mesleading?
+    private ConvertListToArray(data: Buffer) : Array<string> {
         let retval = new Array<string>();
-        let list = this.kex_algorithms.toString('utf8').split(',');
+        let list = data.toString('utf8').split(',');
         for(let val of list) {
             retval.push(val.trim());
         }
         return retval;
     }
-    // TODO: implement other getters
+    public setCookie(data: Buffer) {
+        this.cookie = data;
+    }
+    public setKexAlgorithms(data: Buffer) {
+        this.kex_algorithms = data;
+    }
+    public setServerHostKeyAlgorithms(data: Buffer) {
+        this.server_host_key_algorithms = data;
+    }
+    public setEncryptionAlgorithmsClientToServer(data: Buffer) {
+        this.encryption_algorithms_client_to_server = data;
+    }
+    public setEncryptionAlgorithmsServerToClient(data: Buffer) {
+        this.encryption_algorithms_server_to_client = data;
+    }
+    public setMacAlgorithmsClientToServer(data: Buffer) {
+        this.mac_algorithms_client_to_server = data;
+    }
+    public setMacAlgorithmsServerToClient(data: Buffer) {
+        this.mac_algorithms_server_to_client = data;
+    }
+    public setCompressionАlgorithmsClientToServer(data: Buffer) {
+        this.compression_algorithms_client_to_server = data;
+    }
+    public setCompressionAlgorithmsServerToClient(data: Buffer) {
+        this.compression_algorithms_server_to_client = data;
+    }
+    public setLanguagesClientToServer(data: Buffer) {
+        this.languages_client_to_server = data;
+    }
+    public setLanguagesServerToClient(data: Buffer) {
+        this.languages_server_to_client = data;
+    }
+    public setFirstKexPacketFollows(flag: boolean) {
+        this.first_kex_packet_follows = flag;
+    }
 }

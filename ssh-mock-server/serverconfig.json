@@ -1,0 +1,4 @@
+{
+    "port": 2223,
+    "kex_algorithms": "curve25519-sha256"
+}

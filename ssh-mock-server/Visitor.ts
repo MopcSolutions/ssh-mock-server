@@ -61,9 +61,11 @@ export class Visitor {
                     if(sshString.startsWith('SSH-2.0')) {
                         console.log('SSH2.0 ok');
                         this.state = this.state.getNextState();
+                        // send ssh version to visitor
                         this.sendString("SSH-2.0-ssh-mock-server\r\n");
                     } else {
                         console.log("wrong ssh version: " + sshString);
+                        // close connection to visitor
                         this.socket.end();
                         this.socket.destroy();
                     }
@@ -72,13 +74,68 @@ export class Visitor {
                     let bufferReader = new SshBufferReader(data);
                     let algorithmNegotiation = new AlgorithmNegotiation(bufferReader.getPayload())
                     if(algorithmNegotiation.HasError() == false) {
-                        // check stuff
-                        let kexAlgorithms = algorithmNegotiation.getKexAlgorithmsList();
-                        console.log("Visitor.onData LIST KEX ALGIRITHMS");
-                        for(let val of kexAlgorithms) {
+                        // check kex_algorithms
+                        let algorithms = algorithmNegotiation.GetKexAlgorithmsList();
+                        console.log("Visitor.onData LIST kex algorithms");
+                        for(let val of algorithms) {
                             console.log(val);
                         }
-                        // TODO: check other lists
+                        // check server_host_key_algorithms
+                        algorithms = algorithmNegotiation.GetServerHostKeyAlgorithms()
+                        console.log("Visitor.onData LIST server host key algorithms");
+                        for(let val of algorithms) {
+                            console.log(val);
+                        }
+                        // check encryption_algorithms_client_to_server
+                        algorithms = algorithmNegotiation.GetEncryptionAlgorithmsClientToServer();
+                        console.log("Visitor.onData LIST encryption_algorithms_client_to_server");
+                        for(let val of algorithms) {
+                            console.log(val);
+                        }
+                        // check encryption_algorithms_server_to_client
+                        algorithms = algorithmNegotiation.GetEncryptionAlgorithmsServerToClient();
+                        console.log("Visitor.onData LIST encryption_algorithms_server_to_client");
+                        for(let val of algorithms) {
+                            console.log(val);
+                        }
+                        // check mac_algorithms_client_to_server
+                        algorithms = algorithmNegotiation.GetMacAlgorithmsClientToServer();
+                        console.log("Visitor.onData LIST mac_algorithms_client_to_server");
+                        for(let val of algorithms) {
+                            console.log(val);
+                        }
+                        // check mac_algorithms_server_to_client
+                        algorithms = algorithmNegotiation.GetMacAlgorithmsServerToClient();
+                        console.log("Visitor.onData LIST mac_algorithms_server_to_client");
+                        for(let val of algorithms) {
+                            console.log(val);
+                        }
+                        // check compression_algorithms_client_to_server
+                        algorithms = algorithmNegotiation.GetCompressionAlgorithmsClientToServer();
+                        console.log("Visitor.onData LIST compression_algorithms_client_to_server");
+                        for(let val of algorithms) {
+                            console.log(val);
+                        }
+                        // check compression_algorithms_server_to_client
+                        algorithms = algorithmNegotiation.GetCompressionAlgorithmsServerToClient();
+                        console.log("Visitor.onData LIST compression_algorithms_server_to_client");
+                        for(let val of algorithms) {
+                            console.log(val);
+                        }
+                        // check languages_client_to_server
+                        algorithms = algorithmNegotiation.GetLanguagesClientToServer();
+                        console.log("Visitor.onData LIST languages_client_to_server");
+                        for(let val of algorithms) {
+                            console.log(val);
+                        }
+                        // check languages_server_to_client
+                        algorithms = algorithmNegotiation.GetLanguagesServerToClient();
+                        console.log("Visitor.onData LIST languages_server_to_client");
+                        for(let val of algorithms) {
+                            console.log(val);
+                        }
+                        // SEND KEX TO VISITOR
+                        this.sendKex();
                     }
                     this.state = this.state.getNextState();
                     break;
@@ -139,6 +196,14 @@ export class Visitor {
         this.socket.write(message);
     }
 
+    public sendKex() {
+        // TODO: implement
+        let data = Buffer.alloc(255);
+
+        this.socket.write(data);
+    }
+
+    // TODO: create global value
     private buildStateMachine() : State {
         let initState = new State(States.init);
         let readSsh = new State(States.read_ssh_version);
