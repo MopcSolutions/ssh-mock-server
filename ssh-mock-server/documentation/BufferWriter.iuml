@@ -1,0 +1,7 @@
+class BufferWriter {
+    -data: number[]
+    +appendByte(n: number)
+    +appendBuffer(buf: Buffer)
+    +appendInt32(n: number)
+    +ToBuffer() : Buffer
+}

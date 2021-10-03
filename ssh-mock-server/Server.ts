@@ -6,6 +6,7 @@ import fs = require('fs');
 import { Visitor } from "./Visitor";
 import { DatabaseFacade } from './DatabaseFacade'
 import { ServerConfig } from './ServerConfig'
+import { Util } from './Util'
 
 export class Server {
     // change the server name on prod
@@ -16,11 +17,16 @@ export class Server {
     private config: ServerConfig;
 
     public start(): void {
+        // output node possibilities
+        // Util.OutputArray("CRYPTO GET CURVES", crypto.getCurves());
+        // Util.OutputArray("CRYPTO GET CIPHERS", crypto.getCiphers());
+        // console.log("CRYPTO GET Diffie Hellman 18");
+        // console.log(crypto.getDiffieHellman('modp18'));
         // set defaults
         let port: number = Server.DefaultPort;
 
         // read config
-        let json = fs.readFileSync('./serverconfig.json');
+        let json = fs.readFileSync('./config/serverconfig.json');
         this.config = JSON.parse(json.toString('utf8'));
         if(this.config != null) {
             console.log("Server.start reading config");
@@ -50,7 +56,7 @@ export class Server {
             s.destroy();
         } else {
             // just create one in memory for now
-            new Visitor(s);
+            new Visitor(s, this.config);
         }
     }
 
@@ -67,17 +73,5 @@ export class Server {
 
     private onListening(): void {
         console.log("Server.onListening...");
-    }
-
-    public createKeys(): void {
-        var prime_length = 60;
-        var diffHell = crypto.createDiffieHellman(prime_length);
-        
-        diffHell.generateKeys('base64');
-        console.log("Public Key : " ,diffHell.getPublicKey('base64'));
-        console.log("Private Key : " ,diffHell.getPrivateKey('base64'));
-        
-        console.log("Public Key : " ,diffHell.getPublicKey('hex'));
-        console.log("Private Key : " ,diffHell.getPrivateKey('hex'));
     }
 }

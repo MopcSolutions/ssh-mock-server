@@ -10,9 +10,10 @@ export class State {
         this.state = s;
     }
 
-    public setNextState(s: State) {
+    public setNextState(s: State) : State {
         this.nextState = s;
         s.setPrevState(this);
+        return s;
     }
 
     public setPrevState(s: State) {

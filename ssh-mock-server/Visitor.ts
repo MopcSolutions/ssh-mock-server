@@ -6,13 +6,18 @@ import { States } from './States';
 import { State } from './State';
 import { SshBufferReader } from './SshBufferReader'
 import { AlgorithmNegotiation } from './AlgorithmNegotiation'
+import { ServerConfig } from './ServerConfig'
+import { Util } from './Util'
+import { BufferWriter } from "./BufferWriter";
 
 export class Visitor {
     // member variables
     private socket: net.Socket;
     private state: State;
-    constructor(s: net.Socket) {
+    private config: ServerConfig;
+    constructor(s: net.Socket, c: ServerConfig) {
         this.socket = s;
+        this.config = c;
 
         // build state machine
         this.state = this.buildStateMachine();
@@ -74,70 +79,48 @@ export class Visitor {
                     let bufferReader = new SshBufferReader(data);
                     let algorithmNegotiation = new AlgorithmNegotiation(bufferReader.getPayload())
                     if(algorithmNegotiation.HasError() == false) {
-                        // check kex_algorithms
+                        // TODO check kex_algorithms
                         let algorithms = algorithmNegotiation.GetKexAlgorithmsList();
-                        console.log("Visitor.onData LIST kex algorithms");
-                        for(let val of algorithms) {
-                            console.log(val);
-                        }
-                        // check server_host_key_algorithms
+                        Util.OutputArray("Visitor.onData LIST kex algorithms", algorithms);
+                        // TODO check server_host_key_algorithms
                         algorithms = algorithmNegotiation.GetServerHostKeyAlgorithms()
-                        console.log("Visitor.onData LIST server host key algorithms");
-                        for(let val of algorithms) {
-                            console.log(val);
-                        }
-                        // check encryption_algorithms_client_to_server
+                        Util.OutputArray("Visitor.onData LIST server host key algorithms", algorithms);
+                        // TODO check encryption_algorithms_client_to_server
                         algorithms = algorithmNegotiation.GetEncryptionAlgorithmsClientToServer();
-                        console.log("Visitor.onData LIST encryption_algorithms_client_to_server");
-                        for(let val of algorithms) {
-                            console.log(val);
-                        }
-                        // check encryption_algorithms_server_to_client
+                        Util.OutputArray("Visitor.onData LIST encryption_algorithms_client_to_server", algorithms);
+                        // TODO check encryption_algorithms_server_to_client
                         algorithms = algorithmNegotiation.GetEncryptionAlgorithmsServerToClient();
-                        console.log("Visitor.onData LIST encryption_algorithms_server_to_client");
-                        for(let val of algorithms) {
-                            console.log(val);
-                        }
-                        // check mac_algorithms_client_to_server
+                        Util.OutputArray("Visitor.onData LIST encryption_algorithms_server_to_client", algorithms);
+                        // TODO check mac_algorithms_client_to_server
                         algorithms = algorithmNegotiation.GetMacAlgorithmsClientToServer();
-                        console.log("Visitor.onData LIST mac_algorithms_client_to_server");
-                        for(let val of algorithms) {
-                            console.log(val);
-                        }
-                        // check mac_algorithms_server_to_client
+                        Util.OutputArray("Visitor.onData LIST mac_algorithms_client_to_server", algorithms);
+                        // TODO check mac_algorithms_server_to_client
                         algorithms = algorithmNegotiation.GetMacAlgorithmsServerToClient();
-                        console.log("Visitor.onData LIST mac_algorithms_server_to_client");
-                        for(let val of algorithms) {
-                            console.log(val);
-                        }
-                        // check compression_algorithms_client_to_server
+                        Util.OutputArray("Visitor.onData LIST mac_algorithms_server_to_client", algorithms);
+                        // TODO check compression_algorithms_client_to_server
                         algorithms = algorithmNegotiation.GetCompressionAlgorithmsClientToServer();
-                        console.log("Visitor.onData LIST compression_algorithms_client_to_server");
-                        for(let val of algorithms) {
-                            console.log(val);
-                        }
-                        // check compression_algorithms_server_to_client
+                        Util.OutputArray("Visitor.onData LIST compression_algorithms_client_to_server", algorithms);
+                        // TODO check compression_algorithms_server_to_client
                         algorithms = algorithmNegotiation.GetCompressionAlgorithmsServerToClient();
-                        console.log("Visitor.onData LIST compression_algorithms_server_to_client");
-                        for(let val of algorithms) {
-                            console.log(val);
-                        }
-                        // check languages_client_to_server
+                        Util.OutputArray("Visitor.onData LIST compression_algorithms_server_to_client", algorithms);
+                        // TODO check languages_client_to_server
                         algorithms = algorithmNegotiation.GetLanguagesClientToServer();
-                        console.log("Visitor.onData LIST languages_client_to_server");
-                        for(let val of algorithms) {
-                            console.log(val);
-                        }
-                        // check languages_server_to_client
+                        Util.OutputArray("Visitor.onData LIST languages_client_to_server", algorithms);
+                        // TODO check languages_server_to_client
                         algorithms = algorithmNegotiation.GetLanguagesServerToClient();
-                        console.log("Visitor.onData LIST languages_server_to_client");
-                        for(let val of algorithms) {
-                            console.log(val);
-                        }
+                        Util.OutputArray("Visitor.onData LIST languages_server_to_client", algorithms);
                         // SEND KEX TO VISITOR
                         this.sendKex();
                     }
                     this.state = this.state.getNextState();
+                    break;
+                case States.key_exchage:
+                    // Util.OutputArrayAsPairs("Visitor.onData key_exchage", data);
+                    // TODO: read key as length + key SSH_MSG_KEXDH_INIT
+                    // TODO: send key SSH_MSG_KEXDH_REPLY
+                    break;
+                default:
+                    console.log("Visitor.onData -> default -> data: " + data);
                     break;
             }            
         }
@@ -181,6 +164,7 @@ export class Visitor {
     }
     
     public isConnected(): boolean {
+        // TODO: ???
         if(this.socket != null) {
             return true;
         }
@@ -198,9 +182,61 @@ export class Visitor {
 
     public sendKex() {
         // TODO: implement
-        let data = Buffer.alloc(255);
+        let algorithmNegotiation =  new AlgorithmNegotiation();
+        // byte         SSH_MSG_KEXINIT
+        // byte[16]     cookie (random bytes)
+        algorithmNegotiation.setCookie(crypto.randomBytes(16));
+        // name-list    kex_algorithms
+        algorithmNegotiation.setKexAlgorithms(Buffer.from(this.config.kex_algorithms));
+        // name-list    server_host_key_algorithms
+        algorithmNegotiation.setServerHostKeyAlgorithms(Buffer.from(this.config.server_host_key_algorithms));
+        // name-list    encryption_algorithms_client_to_server
+        algorithmNegotiation.setEncryptionAlgorithmsClientToServer(Buffer.from(this.config.encryption_algorithms_client_to_server));
+        // name-list    encryption_algorithms_server_to_client
+        algorithmNegotiation.setEncryptionAlgorithmsServerToClient(Buffer.from(this.config.encryption_algorithms_server_to_client));
+        // name-list    mac_algorithms_client_to_server
+        algorithmNegotiation.setMacAlgorithmsClientToServer(Buffer.from(this.config.mac_algorithms_client_to_server));
+        // name-list    mac_algorithms_server_to_client
+        algorithmNegotiation.setMacAlgorithmsServerToClient(Buffer.from(this.config.mac_algorithms_server_to_client));
+        // name-list    compression_algorithms_client_to_server
+        algorithmNegotiation.setCompressionАlgorithmsClientToServer(Buffer.from(this.config.compression_algorithms_client_to_server));
+        // name-list    compression_algorithms_server_to_client
+        algorithmNegotiation.setCompressionAlgorithmsServerToClient(Buffer.from(this.config.compression_algorithms_server_to_client));
+        // name-list    languages_client_to_server
+        algorithmNegotiation.setLanguagesClientToServer(Buffer.from(""));
+        // name-list    languages_server_to_client
+        algorithmNegotiation.setLanguagesServerToClient(Buffer.from(""));
+        // boolean      first_kex_packet_follows
+        algorithmNegotiation.setFirstKexPacketFollows(false);
+        
+        // create payload
+        let blockSize = 8;
+        let payload = algorithmNegotiation.createPayload();
+        // console.log("Visitor.sendKex payload:" + payload.length);
+        let paddingLength: number = blockSize - (payload.length + 5) % blockSize;
+        if (paddingLength < 4) {
+            paddingLength += blockSize;
+        }
+        // console.log("Visitor.sendKex paddingLength:" + paddingLength);
+        let padding: Buffer = Buffer.alloc(paddingLength);
+        // console.log("Visitor.sendKex padding:" + padding.length);
+        let packetLength: number = payload.length + paddingLength + 1;
+        // console.log("Visitor.sendKex packetLength:" + packetLength);
 
-        this.socket.write(data);
+        let writer = new BufferWriter();
+        writer.appendInt32(packetLength);
+        writer.appendByte(paddingLength);
+        writer.appendBuffer(payload);
+        writer.appendBuffer(padding);
+
+        let towrite = writer.ToBuffer();
+
+        // console.log("SEND KEX");
+        // for (const pair of towrite.entries()) {
+        //     console.log(pair);
+        // }
+
+        this.socket.write(towrite);
     }
 
     // TODO: create global value
@@ -208,9 +244,16 @@ export class Visitor {
         let initState = new State(States.init);
         let readSsh = new State(States.read_ssh_version);
         let readKeys = new State(States.read_keys);
+        let keyExchage = new State(States.key_exchage);
 
-        initState.setNextState(readSsh);
-        readSsh.setNextState(readKeys);
+        let lastStep = new State(States.last);
+
+        initState.setNextState(readSsh)
+            .setNextState(readKeys)
+            .setNextState(keyExchage)
+            
+            
+            .setNextState(lastStep);
 
         return initState;
     }

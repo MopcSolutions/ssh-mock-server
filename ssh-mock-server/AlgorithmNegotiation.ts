@@ -19,7 +19,9 @@
       uint32       0 (reserved for future extension)
 */
 
+import { read, write } from "fs";
 import { SshMsgKeys } from "./SshMggKeys";
+import { BufferWriter } from './BufferWriter'
 
 export class AlgorithmNegotiation {
     private hasError: boolean = false;
@@ -36,9 +38,14 @@ export class AlgorithmNegotiation {
     private compression_algorithms_server_to_client: Buffer;
     private languages_client_to_server: Buffer;
     private languages_server_to_client: Buffer;
-    private first_kex_packet_follows: boolean;
+    private first_kex_packet_follows: boolean = false;
     // ctor
-    constructor(data: Buffer) {
+    constructor(data?: Buffer) {
+        if(data != null) {
+            this.readData(data);
+        }
+    }
+    private readData(data: Buffer) {
         let offset: number = 0;
         this.key = data.readInt8(offset);
         offset += 1;
@@ -156,6 +163,9 @@ export class AlgorithmNegotiation {
     public GetLanguagesServerToClient() : Array<string> {
         return this.ConvertListToArray(this.languages_server_to_client);
     }
+    public GetFirstKexPacketFollows() : boolean {
+        return this.first_kex_packet_follows;
+    }
     // TODO: is this name mesleading?
     private ConvertListToArray(data: Buffer) : Array<string> {
         let retval = new Array<string>();
@@ -200,5 +210,47 @@ export class AlgorithmNegotiation {
     }
     public setFirstKexPacketFollows(flag: boolean) {
         this.first_kex_packet_follows = flag;
+    }
+    public createPayload() : Buffer {
+        let writer : BufferWriter = new BufferWriter();
+
+        writer.appendByte(SshMsgKeys.SSH_MSG_KEXINIT);
+        writer.appendBuffer(this.cookie);
+        // kex_algorithms
+        writer.appendInt32(this.kex_algorithms.length);
+        writer.appendBuffer(this.kex_algorithms);
+        // server_host_key_algorithms
+        writer.appendInt32(this.server_host_key_algorithms.length);
+        writer.appendBuffer(this.server_host_key_algorithms);
+        // encryption_algorithms_client_to_server
+        writer.appendInt32(this.encryption_algorithms_client_to_server.length);
+        writer.appendBuffer(this.encryption_algorithms_client_to_server);
+        // encryption_algorithms_server_to_client
+        writer.appendInt32(this.encryption_algorithms_server_to_client.length);
+        writer.appendBuffer(this.encryption_algorithms_server_to_client);
+        // mac_algorithms_client_to_server
+        writer.appendInt32(this.mac_algorithms_client_to_server.length);
+        writer.appendBuffer(this.mac_algorithms_client_to_server);
+        // mac_algorithms_server_to_client
+        writer.appendInt32(this.mac_algorithms_server_to_client.length);
+        writer.appendBuffer(this.mac_algorithms_server_to_client);
+        // compression_algorithms_client_to_server
+        writer.appendInt32(this.compression_algorithms_client_to_server.length);
+        writer.appendBuffer(this.compression_algorithms_client_to_server);
+        // compression_algorithms_server_to_client
+        writer.appendInt32(this.compression_algorithms_server_to_client.length);
+        writer.appendBuffer(this.compression_algorithms_server_to_client);
+        // languages_client_to_server
+        writer.appendInt32(this.languages_client_to_server.length);
+        writer.appendBuffer(this.languages_client_to_server);
+        // languages_server_to_client
+        writer.appendInt32(this.languages_server_to_client.length);
+        writer.appendBuffer(this.languages_server_to_client);
+        // first_kex_packet_follows
+        writer.appendByte(this.first_kex_packet_follows ? 0x01 : 0x00);
+        // int 32 = 0 (???)
+        writer.appendInt32(0);
+        
+        return writer.ToBuffer();
     }
 }
