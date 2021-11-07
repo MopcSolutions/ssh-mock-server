@@ -16,17 +16,17 @@ package ssh-mock-server {
 
 AlgorithmNegotiation ..> BufferWriter : uses
 AlgorithmNegotiation ..> SshMsgKeys : uses
-Visitor ..> BufferWriter : uses
-Visitor ..> State : uses
+Visitor .up.> BufferWriter : uses
+Visitor o-- State : uses
 Visitor ..> States : uses
-Visitor --> ServerConfig : uses
-Visitor --> SshBufferReader : uses
-Visitor --> AlgorithmNegotiation : uses
-Visitor --> Util : uses
-Server --> Visitor : creates
-Server --> DatabaseFacade : uses
-Server --> ServerConfig : uses
-Server --> Util : uses
+Visitor o-- ServerConfig : uses
+Visitor ..> SshBufferReader : uses
+Visitor ..> AlgorithmNegotiation : uses
+Visitor ..> Util : uses
+Server ..> Visitor : creates
+Server ..> DatabaseFacade : uses
+Server o-- ServerConfig : uses
+Server ..> Util : uses
 
-State o.. States
-State o.. State
+State o-- States
+State o-- State

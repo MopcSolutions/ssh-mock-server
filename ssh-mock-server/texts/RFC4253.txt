@@ -1494,6 +1494,8 @@ RFC 4253              SSH Transport Layer Protocol          January 2006
          SSH_MSG_SERVICE_ACCEPT         6
          SSH_MSG_KEXINIT                20
          SSH_MSG_NEWKEYS                21
+         SSH_MSG_KEXDH_INIT             30
+         SSH_MSG_KEXDH_REPLY            31
 
    Note that numbers 30-49 are used for kex packets.  Different kex
    methods may reuse message numbers in this range.

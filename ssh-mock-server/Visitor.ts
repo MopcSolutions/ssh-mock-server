@@ -6,9 +6,11 @@ import { States } from './States';
 import { State } from './State';
 import { SshBufferReader } from './SshBufferReader'
 import { AlgorithmNegotiation } from './AlgorithmNegotiation'
+import { KeyExchange } from './KeyExchange'
 import { ServerConfig } from './ServerConfig'
 import { Util } from './Util'
 import { BufferWriter } from "./BufferWriter";
+import { DiffieHellmanFactory } from "./DiffieHellmanFactory"
 
 export class Visitor {
     // member variables
@@ -71,50 +73,16 @@ export class Visitor {
                     } else {
                         console.log("wrong ssh version: " + sshString);
                         // close connection to visitor
+                        // TODO: SSH_MSG_DISCONNECT
                         this.socket.end();
                         this.socket.destroy();
                     }
                     break;
                 case States.read_keys:
-                    let bufferReader = new SshBufferReader(data);
-                    let algorithmNegotiation = new AlgorithmNegotiation(bufferReader.getPayload())
-                    if(algorithmNegotiation.HasError() == false) {
-                        // TODO check kex_algorithms
-                        let algorithms = algorithmNegotiation.GetKexAlgorithmsList();
-                        Util.OutputArray("Visitor.onData LIST kex algorithms", algorithms);
-                        // TODO check server_host_key_algorithms
-                        algorithms = algorithmNegotiation.GetServerHostKeyAlgorithms()
-                        Util.OutputArray("Visitor.onData LIST server host key algorithms", algorithms);
-                        // TODO check encryption_algorithms_client_to_server
-                        algorithms = algorithmNegotiation.GetEncryptionAlgorithmsClientToServer();
-                        Util.OutputArray("Visitor.onData LIST encryption_algorithms_client_to_server", algorithms);
-                        // TODO check encryption_algorithms_server_to_client
-                        algorithms = algorithmNegotiation.GetEncryptionAlgorithmsServerToClient();
-                        Util.OutputArray("Visitor.onData LIST encryption_algorithms_server_to_client", algorithms);
-                        // TODO check mac_algorithms_client_to_server
-                        algorithms = algorithmNegotiation.GetMacAlgorithmsClientToServer();
-                        Util.OutputArray("Visitor.onData LIST mac_algorithms_client_to_server", algorithms);
-                        // TODO check mac_algorithms_server_to_client
-                        algorithms = algorithmNegotiation.GetMacAlgorithmsServerToClient();
-                        Util.OutputArray("Visitor.onData LIST mac_algorithms_server_to_client", algorithms);
-                        // TODO check compression_algorithms_client_to_server
-                        algorithms = algorithmNegotiation.GetCompressionAlgorithmsClientToServer();
-                        Util.OutputArray("Visitor.onData LIST compression_algorithms_client_to_server", algorithms);
-                        // TODO check compression_algorithms_server_to_client
-                        algorithms = algorithmNegotiation.GetCompressionAlgorithmsServerToClient();
-                        Util.OutputArray("Visitor.onData LIST compression_algorithms_server_to_client", algorithms);
-                        // TODO check languages_client_to_server
-                        algorithms = algorithmNegotiation.GetLanguagesClientToServer();
-                        Util.OutputArray("Visitor.onData LIST languages_client_to_server", algorithms);
-                        // TODO check languages_server_to_client
-                        algorithms = algorithmNegotiation.GetLanguagesServerToClient();
-                        Util.OutputArray("Visitor.onData LIST languages_server_to_client", algorithms);
-                        // SEND KEX TO VISITOR
-                        this.sendKex();
-                    }
-                    this.state = this.state.getNextState();
+                    this.processReadKeys(data);
                     break;
                 case States.key_exchage:
+                    this.processKeyExchange(data);
                     // Util.OutputArrayAsPairs("Visitor.onData key_exchage", data);
                     // TODO: read key as length + key SSH_MSG_KEXDH_INIT
                     // TODO: send key SSH_MSG_KEXDH_REPLY
@@ -124,6 +92,70 @@ export class Visitor {
                     break;
             }            
         }
+    }
+    private processReadKeys(data: Buffer) : void {
+        let bufferReader = new SshBufferReader(data);
+        let algorithmNegotiation = new AlgorithmNegotiation(bufferReader.getPayload())
+        if(algorithmNegotiation.HasError() == false) {
+            // TODO check kex_algorithms
+            let algorithms = algorithmNegotiation.GetKexAlgorithmsList();
+            Util.OutputArray("Visitor.onData LIST kex algorithms", algorithms);
+            // TODO check server_host_key_algorithms
+            algorithms = algorithmNegotiation.GetServerHostKeyAlgorithms()
+            Util.OutputArray("Visitor.onData LIST server host key algorithms", algorithms);
+            // TODO check encryption_algorithms_client_to_server
+            algorithms = algorithmNegotiation.GetEncryptionAlgorithmsClientToServer();
+            Util.OutputArray("Visitor.onData LIST encryption_algorithms_client_to_server", algorithms);
+            // TODO check encryption_algorithms_server_to_client
+            algorithms = algorithmNegotiation.GetEncryptionAlgorithmsServerToClient();
+            Util.OutputArray("Visitor.onData LIST encryption_algorithms_server_to_client", algorithms);
+            // TODO check mac_algorithms_client_to_server
+            algorithms = algorithmNegotiation.GetMacAlgorithmsClientToServer();
+            Util.OutputArray("Visitor.onData LIST mac_algorithms_client_to_server", algorithms);
+            // TODO check mac_algorithms_server_to_client
+            algorithms = algorithmNegotiation.GetMacAlgorithmsServerToClient();
+            Util.OutputArray("Visitor.onData LIST mac_algorithms_server_to_client", algorithms);
+            // TODO check compression_algorithms_client_to_server
+            algorithms = algorithmNegotiation.GetCompressionAlgorithmsClientToServer();
+            Util.OutputArray("Visitor.onData LIST compression_algorithms_client_to_server", algorithms);
+            // TODO check compression_algorithms_server_to_client
+            algorithms = algorithmNegotiation.GetCompressionAlgorithmsServerToClient();
+            Util.OutputArray("Visitor.onData LIST compression_algorithms_server_to_client", algorithms);
+            // TODO check languages_client_to_server
+            algorithms = algorithmNegotiation.GetLanguagesClientToServer();
+            Util.OutputArray("Visitor.onData LIST languages_client_to_server", algorithms);
+            // TODO check languages_server_to_client
+            algorithms = algorithmNegotiation.GetLanguagesServerToClient();
+            Util.OutputArray("Visitor.onData LIST languages_server_to_client", algorithms);
+            // SEND KEX TO VISITOR
+            this.sendKex();
+        }
+        this.state = this.state.getNextState();
+    }
+    private processKeyExchange(data: Buffer) : void {
+        let bufferReader = new SshBufferReader(data);
+        let keyExchange = new KeyExchange(bufferReader.getPayload())
+        // TODO: now its only one, could be an array later
+        let dh = DiffieHellmanFactory.GetDiffieHellman(this.config.kex_algorithms);
+        dh.generateKeys();
+        const sharedSecret = dh.computeSecret(keyExchange.getKey());
+        const serverKeyExchange = dh.getPublicKey();
+        // ed25519
+        const keypair = crypto.generateKeyPairSync('ed25519', { privateKeyEncoding: { format: 'pem', type: 'pkcs8' }, publicKeyEncoding: { format: 'pem', type: 'spki' } });
+        const hostKey = keypair.publicKey;
+        const exchangeHash = computeExchangeHash();
+    }
+
+    private computeExchangeHash() : Buffer {
+        let writer = new BufferWriter();
+        // protocol version exchange
+        writer.appendBuffer
+        // kex init client server
+        // kex init server client
+        // host key and certificates
+        // client exchange value
+        // server exchage value
+        // shared secret
     }
 
     // Emitted when the write buffer becomes empty. Can be used to throttle uploads.

@@ -3,11 +3,12 @@ import crypto = require('crypto');
 // import * as fs from 'fs';
 import fs = require('fs');
 
+import { base64encode, base64decode } from "nodejs-base64";
+
 import { Visitor } from "./Visitor";
 import { DatabaseFacade } from './DatabaseFacade'
 import { ServerConfig } from './ServerConfig'
 import { Util } from './Util'
-
 export class Server {
     // change the server name on prod
     public static ProtocolVersionExchange: string = "SSH-2.0-ssh-mock-server";
@@ -18,10 +19,15 @@ export class Server {
 
     public start(): void {
         // output node possibilities
-        // Util.OutputArray("CRYPTO GET CURVES", crypto.getCurves());
-        // Util.OutputArray("CRYPTO GET CIPHERS", crypto.getCiphers());
-        // console.log("CRYPTO GET Diffie Hellman 18");
-        // console.log(crypto.getDiffieHellman('modp18'));
+        const keypair = crypto.generateKeyPairSync('ed25519', {
+            privateKeyEncoding: { format: 'pem', type: 'pkcs8' },
+            publicKeyEncoding: { format: 'pem', type: 'spki' }
+            }
+        );
+        console.log("keypair.privateKey");
+        console.log(keypair.privateKey);
+        console.log("keypair.publicKey");
+        console.log(keypair.publicKey);
         // set defaults
         let port: number = Server.DefaultPort;
 

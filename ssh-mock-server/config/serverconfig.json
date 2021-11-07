@@ -1,7 +1,7 @@
 {
     "port": 2223,
-    "kex_algorithms": "diffie-hellman-group18-sha512",
-    "server_host_key_algorithms": "ssh-rsa",
+    "kex_algorithms": "diffie-hellman-group16-sha512",
+    "server_host_key_algorithms": "ssh-ed25519",
     "encryption_algorithms_client_to_server": "chacha20-poly1305@openssh.com",
     "encryption_algorithms_server_to_client": "chacha20-poly1305@openssh.com",
     "mac_algorithms_client_to_server": "hmac-sha2-256",
